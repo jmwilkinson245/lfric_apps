@@ -1,0 +1,121 @@
+!-------------------------------------------------------------------------------
+! (c) Crown copyright 2026 Met Office. All rights reserved.
+! The file LICENCE, distributed with this code, contains details of the terms
+! under which the code may be used.
+!-------------------------------------------------------------------------------
+!> @brief Interface to the UM electric (lightning) scheme driven by convection
+
+module conv_electric_main_alg_mod
+
+  use config_mod,           only: config_type
+  use constants_mod,        only: r_def
+  use field_mod,            only: field_type
+  use field_collection_mod, only: field_collection_type
+  use fs_continuity_mod,    only: W3, Wtheta
+  use log_mod,              only: log_event, LOG_LEVEL_DEBUG
+  use mesh_mod,             only: mesh_type
+  use timing_mod,           only: start_timing, stop_timing, tik, LPROF
+
+  implicit none
+
+  private
+  public :: conv_electric_main_alg
+
+contains
+
+  !> @brief Calculate lightning flash rates from the convective cloud
+  !> @param[in]     config           Application namelist configuration object
+  !> @param[in]     surface_fields   Fields for the surface scheme
+  !> @param[in]     theta            Potential temperature in wtheta
+  !> @param[in]     lowest_cv_base   Level number of the base of the lowest
+  !>                                 convection in the column
+  !> @param[in]     lowest_cv_top    Level number of the top of the lowest
+  !>                                 convection in the column
+  !> @param[in]     dt               The model timestep length (s)
+  !> @param[in,out] tot_flash_rate   Total flash rate (s-1)
+  !> @param[in,out] cg_flash_rate    Cloud-to-ground flash rate (s-1)
+  !> @param[in,out] ic_flash_rate    Intracloud flash rate (s-1)
+  !> @param[in,out] frac_cg          Fraction of flashes which are
+  !>                                 cloud-to-ground
+  !> @param[in,out] num_cg_flashes   Number of cloud-to-ground flashes this
+  !>                                 timestep
+  !> @param[in,out] num_ic_flashes   Number of intracloud flashes this timestep
+  !> @param[in,out] tot_flashes      Total number of flashes this timestep
+  !> @param[in,out] storm_field      Flag (1/0) to indicate whether a grid
+  !>                                 column contains a thunderstorm
+  subroutine conv_electric_main_alg( config, surface_fields, theta,            &
+                                     lowest_cv_base, lowest_cv_top, dt,        &
+                                     tot_flash_rate, cg_flash_rate,            &
+                                     ic_flash_rate, frac_cg, num_cg_flashes,   &
+                                     num_ic_flashes, tot_flashes, storm_field )
+
+    use conv_electric_main_kernel_mod, only: conv_electric_main_kernel_type
+    use sci_geometric_constants_mod,   only: get_latitude_fv, get_height_fv
+
+    implicit none
+
+    type( config_type ),           intent(in) :: config
+    type( field_collection_type ), intent(in) :: surface_fields
+    type( field_type ),            intent(in) :: theta
+    type( field_type ),            intent(in) :: lowest_cv_base
+    type( field_type ),            intent(in) :: lowest_cv_top
+    real( kind=r_def ),            intent(in) :: dt
+
+    type( field_type ), intent(inout) :: tot_flash_rate
+    type( field_type ), intent(inout) :: cg_flash_rate
+    type( field_type ), intent(inout) :: ic_flash_rate
+    type( field_type ), intent(inout) :: frac_cg
+    type( field_type ), intent(inout) :: num_cg_flashes
+    type( field_type ), intent(inout) :: num_ic_flashes
+    type( field_type ), intent(inout) :: tot_flashes
+    type( field_type ), intent(inout) :: storm_field
+
+    ! Temporary unpacked fields from collections
+    type( field_type ), pointer :: tile_fraction => null()
+
+    type( field_type ), pointer :: latitude_w3 => null()
+    type( field_type ), pointer :: height_w3   => null()
+    type( field_type ), pointer :: height_wth  => null()
+
+    type( mesh_type ), pointer :: mesh      => null()
+    type( mesh_type ), pointer :: twod_mesh => null()
+
+    integer( tik ) :: id
+
+    !--------------------------------------------------------------------------
+    ! End of declarations and start of the subroutine actually doing something
+    !--------------------------------------------------------------------------
+    if ( LPROF ) call start_timing( id, 'conv_electric' )
+
+    call log_event( 'slow_physics: Running convective lightning scheme',       &
+                    LOG_LEVEL_DEBUG )
+
+    ! Unpack fields
+    call surface_fields%get_field('tile_fraction', tile_fraction)
+
+    mesh      => theta%get_mesh()
+    twod_mesh => lowest_cv_base%get_mesh()
+
+    latitude_w3 => get_latitude_fv(config, twod_mesh, W3)
+    height_wth  => get_height_fv(config, mesh, Wtheta)
+    height_w3   => get_height_fv(config, mesh, W3)
+
+    call invoke( conv_electric_main_kernel_type ( height_w3, height_wth,       &
+                                                  latitude_w3,                 &
+                                                  lowest_cv_base,              &
+                                                  lowest_cv_top,               &
+                                                  tile_fraction, dt,           &
+                                                  tot_flash_rate,              &
+                                                  cg_flash_rate,               &
+                                                  ic_flash_rate, frac_cg,      &
+                                                  num_cg_flashes,              &
+                                                  num_ic_flashes,              &
+                                                  tot_flashes, storm_field ) )
+
+    if ( LPROF ) call stop_timing( id, 'conv_electric' )
+
+    nullify( mesh, twod_mesh )
+
+  end subroutine conv_electric_main_alg
+
+end module conv_electric_main_alg_mod
