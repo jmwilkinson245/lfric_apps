@@ -32,8 +32,8 @@ type, public, extends(kernel_type) :: conv_electric_main_kernel_type
        arg_type(GH_FIELD,  GH_REAL, GH_READ,  W3),                             & ! height_w3
        arg_type(GH_FIELD,  GH_REAL, GH_READ,  WTHETA),                         & ! height_wth
        arg_type(GH_FIELD,  GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1),      & ! latitude
-       arg_type(GH_FIELD,  GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1),      & ! lowest_cv_base
-       arg_type(GH_FIELD,  GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1),      & ! lowest_cv_top
+       arg_type(GH_FIELD,  GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1),      & ! cv_base
+       arg_type(GH_FIELD,  GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_1),      & ! cv_top
        arg_type(GH_FIELD,  GH_REAL, GH_READ,  ANY_DISCONTINUOUS_SPACE_2),      & ! tile_fraction
        arg_type(GH_SCALAR, GH_REAL, GH_READ),                                  & ! dt
        arg_type(GH_FIELD,  GH_REAL, GH_WRITE, ANY_DISCONTINUOUS_SPACE_1),      & ! tot_flash_rate
@@ -59,10 +59,10 @@ contains
 !> @param[in]     height_w3        Height of density space levels above surface
 !> @param[in]     height_wth       Height of theta space levels above surface
 !> @param[in]     latitude         Latitude (radians)
-!> @param[in]     lowest_cv_base   Level number of the base of the lowest
-!!                                 convection in the column
-!> @param[in]     lowest_cv_top    Level number of the top of the lowest
-!!                                 convection in the column
+!> @param[in]     cv_base          Level number of the convective cloud base
+!!                                 in the column
+!> @param[in]     cv_top           Level number of the convective cloud top
+!!                                 in the column
 !> @param[in]     tile_fraction    Surface tile fractions
 !> @param[in]     dt               The model timestep length (s)
 !> @param[in,out] tot_flash_rate   Total flash rate (s-1)
@@ -100,7 +100,7 @@ contains
 !> @param[in]     map_tile         Dofmap for a segment of any tiled field
 
 subroutine conv_electric_main_code(nlayers, height_w3, height_wth,             &
-                                   latitude, lowest_cv_base, lowest_cv_top,    &
+                                   latitude, cv_base, cv_top,                  &
                                    tile_fraction, dt,                          &
                                    tot_flash_rate, cg_flash_rate,              &
                                    ic_flash_rate, frac_cg, num_cg_flashes,     &
@@ -135,8 +135,8 @@ subroutine conv_electric_main_code(nlayers, height_w3, height_wth,             &
     real(kind=r_def), intent(in), dimension(undf_w3)   :: height_w3
     real(kind=r_def), intent(in), dimension(undf_wth)  :: height_wth
     real(kind=r_def), intent(in), dimension(undf_2d)   :: latitude
-    real(kind=r_def), intent(in), dimension(undf_2d)   :: lowest_cv_base
-    real(kind=r_def), intent(in), dimension(undf_2d)   :: lowest_cv_top
+    real(kind=r_def), intent(in), dimension(undf_2d)   :: cv_base
+    real(kind=r_def), intent(in), dimension(undf_2d)   :: cv_top
     real(kind=r_def), intent(in), dimension(undf_tile) :: tile_fraction
     real(kind=r_def), intent(in) :: dt
 
@@ -184,8 +184,8 @@ subroutine conv_electric_main_code(nlayers, height_w3, height_wth,             &
     latitude_work(1,1) = real(latitude(map_2d(1)), r_um)
     ! Set to 1 to account for the quasi-uniform grid
     cos_theta_latitude(1,1) = 1.0_r_um
-    lcbase_work(1,1) = nint(lowest_cv_base(map_2d(1)), i_um)
-    lctop_work(1,1)  = nint(lowest_cv_top(map_2d(1)), i_um)
+    lcbase_work(1,1) = nint(cv_base(map_2d(1)), i_um)
+    lctop_work(1,1)  = nint(cv_top(map_2d(1)), i_um)
 
     flandg = 0.0_r_um
     do n = 1, n_land_tile

@@ -27,10 +27,10 @@ contains
   !> @param[in]     config           Application namelist configuration object
   !> @param[in]     surface_fields   Fields for the surface scheme
   !> @param[in]     theta            Potential temperature in wtheta
-  !> @param[in]     lowest_cv_base   Level number of the base of the lowest
-  !>                                 convection in the column
-  !> @param[in]     lowest_cv_top    Level number of the top of the lowest
-  !>                                 convection in the column
+  !> @param[in]     cv_base          Level number of the convective cloud base
+  !>                                 in the column
+  !> @param[in]     cv_top           Level number of the convective cloud top
+  !>                                 in the column
   !> @param[in]     dt               The model timestep length (s)
   !> @param[in,out] tot_flash_rate   Total flash rate (s-1)
   !> @param[in,out] cg_flash_rate    Cloud-to-ground flash rate (s-1)
@@ -44,7 +44,7 @@ contains
   !> @param[in,out] storm_field      Flag (1/0) to indicate whether a grid
   !>                                 column contains a thunderstorm
   subroutine conv_electric_main_alg( config, surface_fields, theta,            &
-                                     lowest_cv_base, lowest_cv_top, dt,        &
+                                     cv_base, cv_top, dt,                      &
                                      tot_flash_rate, cg_flash_rate,            &
                                      ic_flash_rate, frac_cg, num_cg_flashes,   &
                                      num_ic_flashes, tot_flashes, storm_field )
@@ -57,8 +57,8 @@ contains
     type( config_type ),           intent(in) :: config
     type( field_collection_type ), intent(in) :: surface_fields
     type( field_type ),            intent(in) :: theta
-    type( field_type ),            intent(in) :: lowest_cv_base
-    type( field_type ),            intent(in) :: lowest_cv_top
+    type( field_type ),            intent(in) :: cv_base
+    type( field_type ),            intent(in) :: cv_top
     real( kind=r_def ),            intent(in) :: dt
 
     type( field_type ), intent(inout) :: tot_flash_rate
@@ -94,7 +94,7 @@ contains
     call surface_fields%get_field('tile_fraction', tile_fraction)
 
     mesh      => theta%get_mesh()
-    twod_mesh => lowest_cv_base%get_mesh()
+    twod_mesh => cv_base%get_mesh()
 
     latitude_w3 => get_latitude_fv(config, twod_mesh, W3)
     height_wth  => get_height_fv(config, mesh, Wtheta)
@@ -102,8 +102,8 @@ contains
 
     call invoke( conv_electric_main_kernel_type ( height_w3, height_wth,       &
                                                   latitude_w3,                 &
-                                                  lowest_cv_base,              &
-                                                  lowest_cv_top,               &
+                                                  cv_base,                     &
+                                                  cv_top,                      &
                                                   tile_fraction, dt,           &
                                                   tot_flash_rate,              &
                                                   cg_flash_rate,               &

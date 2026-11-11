@@ -91,11 +91,12 @@ implicit none
 ! Subroutine arguments
 integer, intent(in) :: lcbase(tdims%i_start:tdims%i_end,                       &
                               tdims%j_start:tdims%j_end)
-! Integer level of the convective cloud base, from the convection scheme.
+! Integer level number of the convective cloud base, from the
+! convection scheme.
 
 integer, intent(in) :: lctop( tdims%i_start:tdims%i_end,                       &
                               tdims%j_start:tdims%j_end)
-! Integer level of the convective cloud top, from the convection scheme.
+! Integer level number of the convective cloud top, from the convection scheme.
 
 logical, intent(in) :: land_sea_mask( tdims%i_start:tdims%i_end,               &
                                       tdims%j_start:tdims%j_end )
