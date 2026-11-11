@@ -5,7 +5,7 @@
 !-----------------------------------------------------------------------------
 !> @brief Interface to the convection-based electric (lightning) scheme.
 
-module conv_electric_main_kernel_mod
+module electric_conv_kernel_mod
 
 use argument_mod,      only: arg_type,                                         &
                              GH_FIELD, GH_SCALAR, GH_REAL,                     &
@@ -26,7 +26,7 @@ private
 !> The type declaration for the kernel.
 !> Contains the metadata needed by the Psy layer
 
-type, public, extends(kernel_type) :: electric_from_conv_kernel_type
+type, public, extends(kernel_type) :: electric_conv_kernel_type
   private
   type(arg_type) :: meta_args(15) = (/                                         &
        arg_type(GH_FIELD,  GH_REAL, GH_READ,  W3),                             & ! height_w3
@@ -47,10 +47,10 @@ type, public, extends(kernel_type) :: electric_from_conv_kernel_type
        /)
   integer :: operates_on = CELL_COLUMN
 contains
-  procedure, nopass :: electric_from_conv_code
+  procedure, nopass :: electric_conv_code
 end type
 
-public :: electric_from_conv_code
+public :: electric_conv_code
 
 contains
 
@@ -99,16 +99,16 @@ contains
 !!                                 segment for tiled fields
 !> @param[in]     map_tile         Dofmap for a segment of any tiled field
 
-subroutine electric_from_conv_code(nlayers, height_w3, height_wth,             &
-                                   latitude, cv_base, cv_top,                  &
-                                   tile_fraction, dt,                          &
-                                   tot_flash_rate, cg_flash_rate,              &
-                                   ic_flash_rate, frac_cg, num_cg_flashes,     &
-                                   num_ic_flashes, tot_flashes, storm_field,   &
-                                   ndf_w3, undf_w3, map_w3,                    &
-                                   ndf_wth, undf_wth, map_wth,                 &
-                                   ndf_2d, undf_2d, map_2d,                    &
-                                   ndf_tile, undf_tile, map_tile)
+subroutine electric_conv_code(nlayers, height_w3, height_wth,                  &
+                              latitude, cv_base, cv_top,                       &
+                              tile_fraction, dt,                               &
+                              tot_flash_rate, cg_flash_rate,                   &
+                              ic_flash_rate, frac_cg, num_cg_flashes,          &
+                              num_ic_flashes, tot_flashes, storm_field,        &
+                              ndf_w3, undf_w3, map_w3,                         &
+                              ndf_wth, undf_wth, map_wth,                      &
+                              ndf_2d, undf_2d, map_2d,                         &
+                              ndf_tile, undf_tile, map_tile)
 
     use constants_mod,          only: r_def, r_um, i_def, i_um
     use jules_control_init_mod, only: n_land_tile
@@ -224,5 +224,5 @@ subroutine electric_from_conv_code(nlayers, height_w3, height_wth,             &
       storm_field(map_2d(1)) = 0.0_r_def
     end if
 
-end subroutine electric_from_conv_code
-end module electric_from_conv_kernel_mod
+end subroutine electric_conv_code
+end module electric_conv_kernel_mod

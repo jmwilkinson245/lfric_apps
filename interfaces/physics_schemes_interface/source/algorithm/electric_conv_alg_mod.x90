@@ -5,7 +5,7 @@
 !-------------------------------------------------------------------------------
 !> @brief Interface to the UM electric (lightning) scheme driven by convection
 
-module electric_from_conv_alg_mod
+module electric_conv_alg_mod
 
   use config_mod,           only: config_type
   use constants_mod,        only: r_def
@@ -43,13 +43,13 @@ contains
   !> @param[in,out] tot_flashes      Total number of flashes this timestep
   !> @param[in,out] storm_field      Flag (1/0) to indicate whether a grid
   !>                                 column contains a thunderstorm
-  subroutine electric_from_conv_alg( config, surface_fields, theta,            &
-                                     cv_base, cv_top, dt,                      &
-                                     tot_flash_rate, cg_flash_rate,            &
-                                     ic_flash_rate, frac_cg, num_cg_flashes,   &
-                                     num_ic_flashes, tot_flashes, storm_field )
+  subroutine electric_conv_alg( config, surface_fields, theta,                 &
+                                cv_base, cv_top, dt,                           &
+                                tot_flash_rate, cg_flash_rate,                 &
+                                ic_flash_rate, frac_cg, num_cg_flashes,        &
+                                num_ic_flashes, tot_flashes, storm_field )
 
-    use electric_from_conv_kernel_mod, only: electric_from_conv_kernel_type
+    use electric_conv_kernel_mod, only: electric_conv_kernel_type
     use sci_geometric_constants_mod,   only: get_latitude_fv, get_height_fv
 
     implicit none
@@ -85,7 +85,7 @@ contains
     !--------------------------------------------------------------------------
     ! End of declarations and start of the subroutine actually doing something
     !--------------------------------------------------------------------------
-    if ( LPROF ) call start_timing( id, 'conv_electric' )
+    if ( LPROF ) call start_timing( id, 'electric_conv' )
 
     call log_event( 'slow_physics: Running convective lightning scheme',       &
                     LOG_LEVEL_DEBUG )
@@ -100,22 +100,22 @@ contains
     height_wth  => get_height_fv(config, mesh, Wtheta)
     height_w3   => get_height_fv(config, mesh, W3)
 
-    call invoke( electric_from_conv_kernel_type ( height_w3, height_wth,       &
-                                                  latitude_w3,                 &
-                                                  cv_base,                     &
-                                                  cv_top,                      &
-                                                  tile_fraction, dt,           &
-                                                  tot_flash_rate,              &
-                                                  cg_flash_rate,               &
-                                                  ic_flash_rate, frac_cg,      &
-                                                  num_cg_flashes,              &
-                                                  num_ic_flashes,              &
-                                                  tot_flashes, storm_field ) )
+    call invoke( electric_conv_kernel_type ( height_w3, height_wth,            &
+                                             latitude_w3,                      &
+                                             cv_base,                          &
+                                             cv_top,                           &
+                                             tile_fraction, dt,                &
+                                             tot_flash_rate,                   &
+                                             cg_flash_rate,                    &
+                                             ic_flash_rate, frac_cg,           &
+                                             num_cg_flashes,                   &
+                                             num_ic_flashes,                   &
+                                             tot_flashes, storm_field ) )
 
-    if ( LPROF ) call stop_timing( id, 'conv_electric' )
+    if ( LPROF ) call stop_timing( id, 'electric_conv' )
 
     nullify( mesh, twod_mesh )
 
-  end subroutine electric_from_conv_alg
+  end subroutine electric_conv_alg
 
-end module electric_from_conv_alg_mod
+end module electric_conv_alg_mod
