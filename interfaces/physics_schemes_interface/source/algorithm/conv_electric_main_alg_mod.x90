@@ -5,7 +5,7 @@
 !-------------------------------------------------------------------------------
 !> @brief Interface to the UM electric (lightning) scheme driven by convection
 
-module conv_electric_main_alg_mod
+module electric_from_conv_alg_mod
 
   use config_mod,           only: config_type
   use constants_mod,        only: r_def
@@ -43,13 +43,13 @@ contains
   !> @param[in,out] tot_flashes      Total number of flashes this timestep
   !> @param[in,out] storm_field      Flag (1/0) to indicate whether a grid
   !>                                 column contains a thunderstorm
-  subroutine conv_electric_main_alg( config, surface_fields, theta,            &
+  subroutine electric_from_conv_alg( config, surface_fields, theta,            &
                                      cv_base, cv_top, dt,                      &
                                      tot_flash_rate, cg_flash_rate,            &
                                      ic_flash_rate, frac_cg, num_cg_flashes,   &
                                      num_ic_flashes, tot_flashes, storm_field )
 
-    use conv_electric_main_kernel_mod, only: conv_electric_main_kernel_type
+    use electric_from_conv_kernel_mod, only: electric_from_conv_kernel_type
     use sci_geometric_constants_mod,   only: get_latitude_fv, get_height_fv
 
     implicit none
@@ -100,7 +100,7 @@ contains
     height_wth  => get_height_fv(config, mesh, Wtheta)
     height_w3   => get_height_fv(config, mesh, W3)
 
-    call invoke( conv_electric_main_kernel_type ( height_w3, height_wth,       &
+    call invoke( electric_from_conv_kernel_type ( height_w3, height_wth,       &
                                                   latitude_w3,                 &
                                                   cv_base,                     &
                                                   cv_top,                      &
@@ -116,6 +116,6 @@ contains
 
     nullify( mesh, twod_mesh )
 
-  end subroutine conv_electric_main_alg
+  end subroutine electric_from_conv_alg
 
-end module conv_electric_main_alg_mod
+end module electric_from_conv_alg_mod

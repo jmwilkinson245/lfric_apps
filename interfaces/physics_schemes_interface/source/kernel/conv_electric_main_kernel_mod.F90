@@ -26,7 +26,7 @@ private
 !> The type declaration for the kernel.
 !> Contains the metadata needed by the Psy layer
 
-type, public, extends(kernel_type) :: conv_electric_main_kernel_type
+type, public, extends(kernel_type) :: electric_from_conv_kernel_type
   private
   type(arg_type) :: meta_args(15) = (/                                         &
        arg_type(GH_FIELD,  GH_REAL, GH_READ,  W3),                             & ! height_w3
@@ -47,10 +47,10 @@ type, public, extends(kernel_type) :: conv_electric_main_kernel_type
        /)
   integer :: operates_on = CELL_COLUMN
 contains
-  procedure, nopass :: conv_electric_main_code
+  procedure, nopass :: electric_from_conv_code
 end type
 
-public :: conv_electric_main_code
+public :: electric_from_conv_code
 
 contains
 
@@ -99,7 +99,7 @@ contains
 !!                                 segment for tiled fields
 !> @param[in]     map_tile         Dofmap for a segment of any tiled field
 
-subroutine conv_electric_main_code(nlayers, height_w3, height_wth,             &
+subroutine electric_from_conv_code(nlayers, height_w3, height_wth,             &
                                    latitude, cv_base, cv_top,                  &
                                    tile_fraction, dt,                          &
                                    tot_flash_rate, cg_flash_rate,              &
@@ -224,5 +224,5 @@ subroutine conv_electric_main_code(nlayers, height_w3, height_wth,             &
       storm_field(map_2d(1)) = 0.0_r_def
     end if
 
-end subroutine conv_electric_main_code
-end module conv_electric_main_kernel_mod
+end subroutine electric_from_conv_code
+end module electric_from_conv_kernel_mod
