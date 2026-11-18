@@ -104,4 +104,43 @@ contains
 
     if ( LPROF ) call stop_timing( id, 'diags.electric' )
   end subroutine output_main_diags_for_electric
+
+
+  !============================================================================
+  !============================================================================
+
+  !> @brief Output diagnostics from electric scheme when based on convection
+  subroutine output_electric_conv_diagnostics(total_fr, cg_flash_rate,
+                                             ic_flash_rate, frac_cg,
+                                             num_cg_flashes, num_ic_flashes,
+                                             tot_flashes, storm_field )
+
+    implicit none
+
+    ! 2D fields to output as diagnostics
+    type( field_type ), intent(in) :: total_fr, cg_flash_rate,                &
+                                      ic_flash_rate, frac_cg, num_cg_flashes, &
+                                      num_ic_flashes, tot_flashes, storm_field
+
+    integer(tik)                   :: id
+
+    !----------------------------------------------------
+    ! End of declarations; start of subroutine execution
+    !----------------------------------------------------
+
+    if ( LPROF ) call start_timing( id, 'diags.electric' )
+
+    if (total_fr_flag) call total_fr%write_field()
+    if (cg_flash_rate_flag) call cg_flash_rate%write_field()
+    if (ic_flash_rate_flag) call ic_flash_rate%write_field()
+    if (frac_cg_flag) call frac_cg%write_field()
+    if (num_cg_flashes_flag) call num_cg_flashes%write_field()
+    if (num_ic_flashes_flag) call num_ic_flashes%write_field()
+    if (tot_flashes_flag) call tot_flashes%write_field()
+    if (storm_field_flag) call storm_field%write_field()
+
+    if ( LPROF ) call stop_timing( id, 'diags.electric' )
+
+  end subroutine output_electric_conv_diagnostics
+
 end module electric_main_diags_mod

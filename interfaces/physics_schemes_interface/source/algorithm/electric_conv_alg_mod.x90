@@ -16,6 +16,12 @@ module electric_conv_alg_mod
   use mesh_mod,             only: mesh_type
   use timing_mod,           only: start_timing, stop_timing, tik, LPROF
 
+  ! xios output
+  use io_config_mod,        only: write_diag, use_xios_io
+  use electric_main_diags_mod,                                   &
+                            only: initialise_diags_for_electric, &
+                                  output_electric_conv_diagnostics
+
   implicit none
 
   private
@@ -24,30 +30,14 @@ module electric_conv_alg_mod
 contains
 
   !> @brief Calculate lightning flash rates from the convective cloud
-  !> @param[in]     config           Application namelist configuration object
-  !> @param[in]     surface_fields   Fields for the surface scheme
-  !> @param[in]     theta            Potential temperature in wtheta
-  !> @param[in]     cv_base          Level number of the convective cloud base
-  !>                                 in the column
-  !> @param[in]     cv_top           Level number of the convective cloud top
-  !>                                 in the column
-  !> @param[in]     dt               The model timestep length (s)
-  !> @param[in,out] tot_flash_rate   Total flash rate (s-1)
-  !> @param[in,out] cg_flash_rate    Cloud-to-ground flash rate (s-1)
-  !> @param[in,out] ic_flash_rate    Intracloud flash rate (s-1)
-  !> @param[in,out] frac_cg          Fraction of flashes which are
-  !>                                 cloud-to-ground
-  !> @param[in,out] num_cg_flashes   Number of cloud-to-ground flashes this
-  !>                                 timestep
-  !> @param[in,out] num_ic_flashes   Number of intracloud flashes this timestep
-  !> @param[in,out] tot_flashes      Total number of flashes this timestep
-  !> @param[in,out] storm_field      Flag (1/0) to indicate whether a grid
-  !>                                 column contains a thunderstorm
-  subroutine electric_conv_alg( config, surface_fields, theta,                 &
-                                cv_base, cv_top, dt,                           &
-                                tot_flash_rate, cg_flash_rate,                 &
-                                ic_flash_rate, frac_cg, num_cg_flashes,        &
-                                num_ic_flashes, tot_flashes, storm_field )
+  !> @param[in]     config            Application namelist configuration object
+  !> @param[in]     surface_fields    Fields for the surface scheme
+  !> @param[in]     convection_fields Fields from the convection scheme
+  !> @param[in]     electric_fields   Fields for the electric scheme
+  !> @param[in]     theta             Potential temperature in wtheta
+  !> @param[in]     dt                The model timestep length (s)
+  subroutine electric_conv_alg( config, surface_fields, convection_fields,     &
+                                theta, dt )
 
     use electric_conv_kernel_mod, only: electric_conv_kernel_type
     use sci_geometric_constants_mod,   only: get_latitude_fv, get_height_fv
@@ -56,22 +46,16 @@ contains
 
     type( config_type ),           intent(in) :: config
     type( field_collection_type ), intent(in) :: surface_fields
+    type( field_collection_type ), intent(in) :: convection_fields
+    type( field_collection_type ), intent(in) :: electric_fields
     type( field_type ),            intent(in) :: theta
-    type( field_type ),            intent(in) :: cv_base
-    type( field_type ),            intent(in) :: cv_top
     real( kind=r_def ),            intent(in) :: dt
 
-    type( field_type ), intent(inout) :: tot_flash_rate
-    type( field_type ), intent(inout) :: cg_flash_rate
-    type( field_type ), intent(inout) :: ic_flash_rate
-    type( field_type ), intent(inout) :: frac_cg
-    type( field_type ), intent(inout) :: num_cg_flashes
-    type( field_type ), intent(inout) :: num_ic_flashes
-    type( field_type ), intent(inout) :: tot_flashes
-    type( field_type ), intent(inout) :: storm_field
 
     ! Temporary unpacked fields from collections
     type( field_type ), pointer :: tile_fraction => null()
+    type( field_type ), pointer :: cv_base => null()
+    type( field_type ), pointer :: cv_top => null()
 
     type( field_type ), pointer :: latitude_w3 => null()
     type( field_type ), pointer :: height_w3   => null()
@@ -92,6 +76,8 @@ contains
 
     ! Unpack fields
     call surface_fields%get_field('tile_fraction', tile_fraction)
+    call convection_fields%get_field('cv_base', cv_base)
+    call convection_fields%get_field('cv_top', cv_top)
 
     mesh      => theta%get_mesh()
     twod_mesh => cv_base%get_mesh()
@@ -113,6 +99,19 @@ contains
                                              tot_flashes, storm_field ) )
 
     if ( LPROF ) call stop_timing( id, 'electric_conv' )
+
+    ! Output diagnostics
+    if (write_diag .and. use_xios_io) then
+      call output_electric_conv_diagnostics( tot_flash_rate,
+                                             cg_flash_rate,
+                                             ic_flash_rate,
+                                             frac_cg,
+                                             num_cg_flashes,
+                                             num_ic_flashes,
+                                             tot_flashes,
+                                             storm_field )
+
+    end if
 
     nullify( mesh, twod_mesh )
 
