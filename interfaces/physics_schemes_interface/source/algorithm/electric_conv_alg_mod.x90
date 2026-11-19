@@ -64,7 +64,16 @@ contains
     type( mesh_type ), pointer :: mesh      => null()
     type( mesh_type ), pointer :: twod_mesh => null()
 
-    integer( tik ) :: id
+    ! Diagnostic variables as type ( field_type )
+    type( field_type ) :: total_fr ! Total flash rate [s-1]
+    type( field_type ) :: cg_flash_rate ! Cloud-to-ground (CG) flash rate [s-1]
+    type( field_type ) :: ic_flash_rate ! Intracloud (IC) flash rate [s-1]
+    type( field_type ) :: frac_cg       ! Fraction of cloud-to-ground strikes
+    type( field_type ) :: num_cg_flashes ! Number of cloud-to-ground flashes
+    type( field_type ) :: num_ic_flashes ! Number of intracloud flashes
+    type( field_type ) :: num_flashes ! Number of total flashes (IC +CG)
+    type( field_type ) :: storm_field ! Binary flag for whether a storm is 
+                                      ! defined [1/0]
 
     !--------------------------------------------------------------------------
     ! End of declarations and start of the subroutine actually doing something
@@ -86,29 +95,36 @@ contains
     height_wth  => get_height_fv(config, mesh, Wtheta)
     height_w3   => get_height_fv(config, mesh, W3)
 
+
+    call initialise_conv_diags_for_electric( total_fr, cg_flash_rate,          &
+                                             ic_flash_rate, frac_cg,           &
+                                             num_cg_flashes,                   &
+                                             num_ic_flashes,                   &
+                                             num_flashes, storm_field )
+
     call invoke( electric_conv_kernel_type ( height_w3, height_wth,            &
                                              latitude_w3,                      &
                                              cv_base,                          &
                                              cv_top,                           &
                                              tile_fraction, dt,                &
-                                             tot_flash_rate,                   &
+                                             total_fr,                         &
                                              cg_flash_rate,                    &
                                              ic_flash_rate, frac_cg,           &
                                              num_cg_flashes,                   &
                                              num_ic_flashes,                   &
-                                             tot_flashes, storm_field ) )
+                                             num_flashes, storm_field ) )
 
     if ( LPROF ) call stop_timing( id, 'electric_conv' )
 
     ! Output diagnostics
     if (write_diag .and. use_xios_io) then
-      call output_electric_conv_diagnostics( tot_flash_rate,
+      call output_electric_conv_diagnostics( total_fr,
                                              cg_flash_rate,
                                              ic_flash_rate,
                                              frac_cg,
                                              num_cg_flashes,
                                              num_ic_flashes,
-                                             tot_flashes,
+                                             num_flashes,
                                              storm_field )
 
     end if

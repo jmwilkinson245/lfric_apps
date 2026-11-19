@@ -63,6 +63,52 @@ contains
   !============================================================================
   !============================================================================
 
+  !> @brief Initialise fields for electric diagnostics based on convection
+  !> @param[inout] total_fr       Total Flash Rate [s-1]
+  !> @param[inout] cg_flash_rate  Cloud-to-ground (CG) flash rate [s-1]
+  !> @param[inout] ic_flash_rate  Intracloud (IC) flash rate [s-1]
+  !> @param[inout] frac_cg        Fraction of cloud-to-ground strikes []
+  !> @param[inout] num_cg_flashes Number of cloud-to-ground flashes []
+  !> @param[inout] num_ic_flashes Number of intracloud flashes []
+  !> @param[inout] num_flashes    Number of total flashes (IC + CG) []
+  !> @param[inout] storm_field  Binary flag for whether a storm is defined [1/0]
+  subroutine initialise_conv_diags_for_electric( total_fr, cg_flash_rate,      &
+                                                 ic_flash_rate, frac_cg,       &
+                                                 num_cg_flashes,               &
+                                                 num_ic_flashes,               &
+                                                 num_flashes, storm_field )
+
+    implicit none
+
+    ! 2D fields to output as diagnostics
+    type( field_type ), intent(in) :: total_fr, cg_flash_rate, ic_flash_rate,  &
+                                      frac_cg, num_cg_flashes, num_ic_flashes, &
+                                      num_flashes, storm_field
+
+    integer(tik) :: id
+
+    !----------------------------------------------------
+    ! End of declarations; start of subroutine execution
+    !----------------------------------------------------
+    if ( LPROF ) call start_timing( id, 'diags.electric' )
+
+    total_fr_flag       = init_diag(total_fr, 'electric__total_flash_rate')
+    cg_flash_rate_flag  = init_diag(cg_flash_rate, 'electric__cg_flash_rate')
+    ic_flash_rate_flag  = init_diag(ic_flash_rate, 'electric__ic_flash_rate')
+    frac_cg_flag        = init_diag(frac_cg, 'electric__frac_cg')
+    num_cg_flashes_flag = init_diag(num_cg_flashes, 'electrc_num_cg_flashes')
+    num_ic_flashes_flag = init_diag(num_ic_flashes, 'electric__num_ic_flashes')
+    num_flashes_flag    = init_diag(num_flashes, &
+                                    'electric__num_lightning_flashes')
+    storm_field_flag    = init_diag(storm_field, &
+                                    'electric__storm_field_indicator')
+
+    if ( LPROF ) call stop_timing( id, 'diags.electric' )
+
+  end subroutine initialise_conv_diags_for_electric
+
+  !============================================================================
+  !============================================================================
 
   !> @brief Output main diagnostics from electric scheme
   !> @param[in] gwp          Graupel Water Path [kg m-2]
@@ -105,22 +151,29 @@ contains
     if ( LPROF ) call stop_timing( id, 'diags.electric' )
   end subroutine output_main_diags_for_electric
 
-
   !============================================================================
   !============================================================================
 
   !> @brief Output diagnostics from electric scheme when based on convection
-  subroutine output_electric_conv_diagnostics(total_fr, cg_flash_rate,
-                                             ic_flash_rate, frac_cg,
-                                             num_cg_flashes, num_ic_flashes,
-                                             tot_flashes, storm_field )
+  !> @param[inout] total_fr       Total Flash Rate [s-1]
+  !> @param[inout] cg_flash_rate  Cloud-to-ground (CG) flash rate [s-1]
+  !> @param[inout] ic_flash_rate  Intracloud (IC) flash rate [s-1]
+  !> @param[inout] frac_cg        Fraction of cloud-to-ground strikes []
+  !> @param[inout] num_cg_flashes Number of cloud-to-ground flashes []
+  !> @param[inout] num_ic_flashes Number of intracloud flashes []
+  !> @param[inout] num_flashes    Number of total flashes (IC + CG) []
+  !> @param[inout] storm_field  Binary flag for whether a storm is defined [1/0]
+  subroutine output_electric_conv_diagnostics(total_fr, cg_flash_rate,        &
+                                             ic_flash_rate, frac_cg,          &
+                                             num_cg_flashes, num_ic_flashes,  &
+                                             num_flashes, storm_field )
 
     implicit none
 
     ! 2D fields to output as diagnostics
     type( field_type ), intent(in) :: total_fr, cg_flash_rate,                &
                                       ic_flash_rate, frac_cg, num_cg_flashes, &
-                                      num_ic_flashes, tot_flashes, storm_field
+                                      num_ic_flashes, num_flashes, storm_field
 
     integer(tik)                   :: id
 
@@ -136,7 +189,7 @@ contains
     if (frac_cg_flag) call frac_cg%write_field()
     if (num_cg_flashes_flag) call num_cg_flashes%write_field()
     if (num_ic_flashes_flag) call num_ic_flashes%write_field()
-    if (tot_flashes_flag) call tot_flashes%write_field()
+    if (num_flashes_flag) call num_flashes%write_field()
     if (storm_field_flag) call storm_field%write_field()
 
     if ( LPROF ) call stop_timing( id, 'diags.electric' )
