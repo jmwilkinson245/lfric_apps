@@ -141,6 +141,8 @@ module slow_physics_alg_mod
                                        sulphuric_strat_climatology,    &
                                        easyaerosol_sw, easyaerosol_lw, &
                                        murk_prognostic
+  use electric_config_mod,       only: electric_source,           &
+                                       electric_source_microphysics
   use ancil_info,                only: rad_nband
   use jules_control_init_mod,    only: n_land_tile
   use fsd_condensate_alg_mod,    only: fsd_condensate_alg
@@ -591,19 +593,21 @@ contains
     !--------------------------------------------------------------------
 
     if ( electric == electric_um .and. &
-         electric_placement == electric_placement_slow) then
+         electric_source == electric_source_microphysics .and. &
+         electric_placement == electric_placement_slow ) then
 
       ! Call electric_main_alg with the start of the model timestep
       ! information... this differs from the UM (called after microphysics).
 
-      call electric_main_alg( modeldb%config,mr_n, theta, derived_fields, &
+      call electric_main_alg( modeldb%config,mr_n, theta, derived_fields,     &
                               electric_fields, dt )
 
       ! no electric_done flag yet as at present the scheme only generates
       ! diagnostics and does not affect model evolution.
 
-    else if (microphysics_done .and. electric == electric_um .and.      &
-        electric_placement == electric_placement_post_mphys ) then
+    else if ( microphysics_done .and. electric == electric_um .and.           &
+              electric_source == electric_source_microphysics .and.           &
+              electric_placement == electric_placement_post_mphys ) then
 
       ! Run the electric scheme but the updated information from the
       ! microphysics, matching what we did in the UM pre-LFRic.
@@ -615,7 +619,7 @@ contains
       call clone_bundle(mr_n, mr_electric, nummr)
       call add_bundle(mr_n, dmr_mphys, mr_electric, nummr)
 
-      ! Update theta due to microphysics
+      ! Update theta due to microphysics increment.
       call theta%copy_field_properties(theta_electric)
       call invoke(X_plus_Y(theta_electric, theta, dtheta_mphys))
 

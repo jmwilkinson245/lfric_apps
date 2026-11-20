@@ -118,13 +118,13 @@ contains
 
     ! Output diagnostics
     if (write_diag .and. use_xios_io) then
-      call output_electric_conv_diagnostics( total_fr,
-                                             cg_flash_rate,
-                                             ic_flash_rate,
-                                             frac_cg,
-                                             num_cg_flashes,
-                                             num_ic_flashes,
-                                             num_flashes,
+      call output_electric_conv_diagnostics( total_fr,                         &
+                                             cg_flash_rate,                    &
+                                             ic_flash_rate,                    &
+                                             frac_cg,                          &
+                                             num_cg_flashes,                   &
+                                             num_ic_flashes,                   &
+                                             num_flashes,                      &
                                              storm_field )
 
     end if

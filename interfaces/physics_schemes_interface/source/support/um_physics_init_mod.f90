@@ -158,6 +158,10 @@ module um_physics_init_mod
                                      l_cvdiag_ctop_qmax_in => l_cvdiag_ctop_qmax, &
                                      llcs_first_outer
 
+  use electric_config_mod,       only : electric_source,                     &
+                                        electric_source_convection,          &
+                                        electric_source_microphysics
+  
   use extrusion_config_mod,      only : domain_height, number_of_layers
 
   use formulation_config_mod,    only : moisture_formulation,    &
@@ -434,6 +438,7 @@ contains
          l_twobin_dust, dust_parameters_load, l_dust_emp_sc,               &
          l_dust_clay_as_max, dust_bl_mixfac, dust_parameters_unload
     use electric_inputs_mod, only: electric_method, no_lightning, em_mccaul, &
+                                   em_price_rind,                            &
                                    k1, k2, gwp_thresh, tiwp_thresh,          &
                                    storm_definition, graupel_and_ice
     use fsd_parameters_mod, only: f_cons
@@ -1492,35 +1497,46 @@ contains
     !---------------------------------------------------------
 
     if ( electric == electric_um ) then
-      ! Turn on mcccaul lightning scheme
-      electric_method = em_mccaul
-      storm_definition = graupel_and_ice
-      gwp_thresh = 0.2_r_um
-      tiwp_thresh = 1.0_r_um
 
-      if (l_mcr_qcf2) then
-        qcf2_idims_start = 1_i_um
-        qcf2_jdims_start = 1_i_um
-        qcf2_idims_end = 1_i_um
-        qcf2_jdims_end = 1_i_um
-        qcf2_kdims_end = model_levels
-      end if
+      if ( electric_source == electric_source_microphysics ) then
+        ! Turn on mcccaul lightning scheme
+        electric_method = em_mccaul
+        storm_definition = graupel_and_ice
+        gwp_thresh = 0.2_r_um
+        tiwp_thresh = 1.0_r_um
 
-      if ( microphysics_casim ) then
-        ! Use CASIM microphysics-specific settings
-        k1 = 0.21_r_um
-        k2 = 0.60_r_um
-      else
-        ! Use Wilson-Ballard microphysics settings
-        k1 = 0.042_r_um
-        k2 = 0.20_r_um
-      end if
+        if (l_mcr_qcf2) then
+          qcf2_idims_start = 1_i_um
+          qcf2_jdims_start = 1_i_um
+          qcf2_idims_end = 1_i_um
+          qcf2_jdims_end = 1_i_um
+          qcf2_kdims_end = model_levels
+        end if
 
-    else
+        if ( microphysics_casim ) then
+          ! Use CASIM microphysics-specific settings
+          k1 = 0.21_r_um
+          k2 = 0.60_r_um
+        else
+          ! Use Wilson-Ballard microphysics settings
+          k1 = 0.042_r_um
+          k2 = 0.20_r_um
+        end if
+
+      else if ( electric_source == electric_source_convection ) then
+         ! Turn on the convection-based lightning
+         electric_method = em_price_rind
+         l_pr_update = .true.
+
+      else ! no lightning
+        ! Switch off the lightning scheme
+        electric_method = no_lightning
+      end if ! electric_source
+
+    else ! electric /= electric_um
       ! Switch off the lightning scheme
       electric_method = no_lightning
     end if
-
 
     if ( microphysics == microphysics_um                                    &
          .or. radiation == radiation_socrates ) then
